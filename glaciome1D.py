@@ -226,10 +226,12 @@ class glaciome:
         elif method == 'lm':
             result = root(self.__solve_diagnostic, UggmuW, method=method, options={'maxiter':int(1e6)})#, 'xtol':1e-12})
         
+        print('=== SOLVER RESULTS ===')
         print('status: ' + str(result.status))
         print('success: ' + str(result.success))
         print('message: ' + result.message)
         print('')
+
     
         if result.status > 2:
             
@@ -272,6 +274,7 @@ class glaciome:
             print('success: ' + str(result.success))
             print('message: ' + result.message)
             print('')
+
         
         self.U = result.x[:len(self.x)]
         self.gg = result.x[len(self.x):2*len(self.x)-1]
