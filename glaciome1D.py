@@ -966,3 +966,6 @@ def plot_basic_figure(data, axes, color_id, k):
     ax3.plot(X_,gg,color=plt.cm.viridis(color_id[k]))
     ax4.plot(X,muW,color=plt.cm.viridis(color_id[k]))
     ax5.plot(np.append(y-y[-1],y),np.append(u_transverse,u_transverse[-1::-1])/data.constants.daysYear,color=plt.cm.viridis(color_id[k]))
+    
+    # Save the plot as PNG with unique filename
+    plt.savefig(f'glaciome_plot_step_{k:03d}.png', dpi=300, bbox_inches='tight')

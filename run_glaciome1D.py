@@ -50,6 +50,12 @@ print(f"Time step: {dt} a")
 print(f"Melt rate: {B} m/a")
 print("=========================")
 
+print("=== FJORD GEOMETRY SETUP ===")
+print(f"Fjord width at terminus: {Wt} m")
+print(f"Fjord width variation: {0/10000} (currently set to 0)")
+print(f"Fjord coordinates range: [{X_fjord.min():.0f}, {X_fjord.max():.0f}] m")
+print("===========================")
+
 # specifying fjord geometry
 X_fjord = np.linspace(-200e3,200e3,101)
 Wt = 4000
@@ -57,9 +63,15 @@ W_fjord = Wt + 0/10000*X_fjord
 
 
 # set up basic figure
+print("=== SETTING UP FIGURE ===")
 axes, color_id = basic_figure(n, dt)
+print("Figure setup completed")
+print("=========================")
 
+print("=== INITIALIZING GLACIOME MODEL ===")
 data = glaciome(n_pts, dt, L, Ut, Uc, Ht, B, X_fjord, W_fjord)
+print("Glaciome model initialized successfully")
+print("=========================")
 
 # DEBUG: Check model initialization
 print("=== MODEL INITIALIZATION ===")
@@ -71,6 +83,7 @@ print(f"Width range: [{data.W.min():.2f}, {data.W.max():.2f}] m")
 print("===========================")
 
 start = time.time()
+print(f"=== TIMING STARTED: {time.strftime('%H:%M:%S')} ===")
 
 # DEBUG: Set breakpoint here for diagnostic solve
 print("=== STARTING DIAGNOSTIC SOLVE ===")
@@ -83,19 +96,32 @@ try:
     # Set breakpoint here to inspect before solver
     breakpoint()  # DEBUG: Pause here to inspect initial state
     
+    print("Calling diagnostic solver with Levenberg-Marquardt method...")
     data.diagnostic()
-    print("=== DIAGNOSTIC SOLVE COMPLETED ===")
+    print("=== DIAGNOSTIC SOLVE COMPLETED SUCCESSFULLY ===")
 except Exception as e:
     print(f"DIAGNOSTIC SOLVE FAILED: {e}")
-    print("Trying with different solver...")
+    print("Trying with hybrid solver...")
     try:
+        print("Calling diagnostic solver with hybrid method...")
         data.diagnostic(method='hybr')
         print("=== DIAGNOSTIC SOLVE COMPLETED WITH HYBRID SOLVER ===")
     except Exception as e2:
         print(f"HYBRID SOLVER ALSO FAILED: {e2}")
         raise
+
+print("=== PLOTTING INITIAL STATE ===")
 plot_basic_figure(data, axes, color_id, 0)
+print("Initial state plotted")
+
+print("=== SAVING INITIAL DATA ===")
+data.save('melange_initial_state.pickle')
+print("Initial data saved to melange_initial_state.pickle")
+
+print("=== ADJUSTING TIME STEP ===")
+print(f"Changing dt from {data.dt} to 0.1")
 data.dt = 0.1
+print("Time step adjusted")
 # data.steadystate()
 
 # j = 1
@@ -107,26 +133,48 @@ data.dt = 0.1
 
 # DEBUG: Set breakpoint here for steady state solve
 print("=== STARTING STEADY STATE SOLVE ===")
+print("Calling steadystate solver with hybrid method...")
 data.steadystate(method='hybr')
 print("=== STEADY STATE SOLVE COMPLETED ===")
-plot_basic_figure(data, axes, color_id, 100)
-stop = time.time()
 
+print("=== PLOTTING STEADY STATE ===")
+plot_basic_figure(data, axes, color_id, 100)
+print("Steady state plotted")
+
+print("=== SAVING STEADY STATE DATA ===")
+data.save('melange_steady_state.pickle')
+print("Steady state data saved to melange_steady_state.pickle")
+
+stop = time.time()
+print(f"=== TIMING COMPLETED: {time.strftime('%H:%M:%S')} ===")
 print(f"Total execution time: {stop-start:.2f} seconds")
 
 #%%
+print("=== STARTING ADDITIONAL DIAGNOSTIC SOLVE ===")
 data.diagnostic()
+print("Additional diagnostic solve completed")
+
+print("=== PLOTTING ADDITIONAL STATE ===")
 plot_basic_figure(data, axes, color_id, 0)
+print("Additional state plotted")
+
+print("=== STARTING PROGNOSTIC SIMULATION LOOP ===")
+print("Will run up to 49 prognostic steps...")
 
 for j in np.arange(1,50):
-    print(f"=== PROGNOSTIC STEP {j} ===")
+    print(f"\n=== PROGNOSTIC STEP {j}/49 ===")
+    print(f"Step start time: {time.strftime('%H:%M:%S')}")
     
     # Store previous state for comparison
     old_L = data.L
     old_volume = np.trapz(data.H, data.X_)*data.W[0]/1e9
+    print(f"Previous length: {old_L:.2f} m")
+    print(f"Previous volume: {old_volume:.4f} km³")
     
     try:
+        print("Calling prognostic solver...")
         data.prognostic()
+        print("Prognostic solve completed successfully")
         
         # Check for physical changes
         dL = data.L - old_L
@@ -137,6 +185,7 @@ for j in np.arange(1,50):
         print(f"Volume change: {dV:.4f} km³")
         print(f"Current length: {data.L:.2f} m")
         print(f"Current volume: {current_volume:.4f} km³")
+        print(f"Current time: {data.t:.3f} years")
         
         # Check for instability
         if abs(dL) > 1000:
@@ -148,40 +197,102 @@ for j in np.arange(1,50):
         breakpoint()  # Pause here to investigate
         break
     
+    print("Plotting current state...")
     plot_basic_figure(data, axes, color_id, j)
+    
+    # Save data every 10 steps to avoid too many files
+    if j % 10 == 0:
+        print(f"Saving data at step {j}...")
+        data.save(f'melange_step_{j:03d}.pickle')
+        print(f"Data saved to melange_step_{j:03d}.pickle")
+    
+    print(f"Step {j} completed at {time.strftime('%H:%M:%S')}")
+
+print("=== PROGNOSTIC SIMULATION LOOP COMPLETED ===")
 
 
 
 #%%
+print("=== STARTING SECOND STEADY STATE SOLVE ===")
 start = time.time()
+print(f"Second steady state solve started at: {time.strftime('%H:%M:%S')}")
 data.steadystate()
 stop = time.time()
-print(stop-start)
+print(f"Second steady state solve completed at: {time.strftime('%H:%M:%S')}")
+print(f"Second steady state solve time: {stop-start:.2f} seconds")
 
+print("=== SETTING UP NEW FIGURE ===")
 axes, color_id = basic_figure(n, dt)
-plot_basic_figure(data, axes, color_id, 10)
+print("New figure setup completed")
 
+print("=== PLOTTING SECOND STEADY STATE ===")
+plot_basic_figure(data, axes, color_id, 10)
+print("Second steady state plotted")
+
+print("=== MODIFYING PARAMETERS ===")
+print("Setting melt rate (B) to 0")
 data.B = 0
+print("Setting calving rate (Uc) to 0")
 data.Uc = 0
+print("Parameters modified")
+
+print("=== STARTING THIRD STEADY STATE SOLVE ===")
+print("Solving with B=0 and Uc=0...")
 data.steadystate()
+print("Third steady state solve completed")
+
+print("=== PLOTTING THIRD STEADY STATE ===")
 plot_basic_figure(data, axes, color_id, 0)
+print("Third steady state plotted")
 
 
 #%%
+print("=== STARTING GRID REFINEMENT STUDY ===")
+print("Setting up figure for grid refinement study...")
 axes, color_id = basic_figure(9, 0.01)
+print("Grid refinement figure setup completed")
+
+print("=== PLOTTING INITIAL STATE FOR GRID STUDY ===")
 plot_basic_figure(data, axes, color_id, 0)
+print("Initial state for grid study plotted")
+
+print("=== SETTING UP GRID REFINEMENT SEQUENCE ===")
 grid = np.linspace(31,101,8)
+print(f"Grid refinement sequence: {grid.astype(int)} points")
+print(f"Will test {len(grid)} different grid resolutions")
 
 for j in np.arange(0,len(grid)):
-    data.refine_grid(int(grid[j]))
+    print(f"\n=== GRID REFINEMENT STEP {j+1}/{len(grid)} ===")
+    print(f"Refining grid to {int(grid[j])} points...")
+    
+    data.regrid(int(grid[j]))
+    print(f"Grid refined to {int(grid[j])} points")
+    
+    print("Setting transient mode...")
     data.transient = 1
+    print("Transient mode enabled")
+    
+    print("Running 10 prognostic steps in transient mode...")
     k = 0
     while k<10:
+        print(f"  Transient step {k+1}/10...")
         data.prognostic()
         k += 1
+    print("Transient mode steps completed")
+    
+    print("Disabling transient mode...")
     data.transient = 0
+    print("Transient mode disabled")
+    
+    print("Running final prognostic step...")
     data.prognostic()
+    print("Final prognostic step completed")
+    
+    print("Plotting refined grid state...")
     plot_basic_figure(data, axes, color_id, j+1)
+    print(f"Grid refinement step {j+1} completed")
+
+print("=== GRID REFINEMENT STUDY COMPLETED ===")
 
 
 # #%%
