@@ -8,7 +8,7 @@ import os
 # from glaciome1D_dimensional import glaciome, basic_figure, plot_basic_figure, constants
 from glaciome1D import glaciome, basic_figure, plot_basic_figure, constants
 
-from scipy.integrate import trapz
+
 
 import pickle
 
@@ -50,16 +50,16 @@ print(f"Time step: {dt} a")
 print(f"Melt rate: {B} m/a")
 print("=========================")
 
+# specifying fjord geometry
+X_fjord = np.linspace(-200e3,200e3,101)
+Wt = 4000
+W_fjord = Wt + 0/10000*X_fjord
+
 print("=== FJORD GEOMETRY SETUP ===")
 print(f"Fjord width at terminus: {Wt} m")
 print(f"Fjord width variation: {0/10000} (currently set to 0)")
 print(f"Fjord coordinates range: [{X_fjord.min():.0f}, {X_fjord.max():.0f}] m")
 print("===========================")
-
-# specifying fjord geometry
-X_fjord = np.linspace(-200e3,200e3,101)
-Wt = 4000
-W_fjord = Wt + 0/10000*X_fjord
 
 
 # set up basic figure
@@ -94,7 +94,7 @@ try:
     print(f"Initial muW range: [{data.muW.min():.6f}, {data.muW.max():.6f}]")
     
     # Set breakpoint here to inspect before solver
-    breakpoint()  # DEBUG: Pause here to inspect initial state
+    # breakpoint()  # DEBUG: Pause here to inspect initial state
     
     print("Calling diagnostic solver with Levenberg-Marquardt method...")
     data.diagnostic()
@@ -190,11 +190,11 @@ for j in np.arange(1,50):
         # Check for instability
         if abs(dL) > 1000:
             print("WARNING: Large length change detected!")
-            breakpoint()  # Pause here to investigate
+            # breakpoint()  # Pause here to investigate
             
     except Exception as e:
         print(f"PROGNOSTIC STEP {j} FAILED: {e}")
-        breakpoint()  # Pause here to investigate
+        # breakpoint()  # Pause here to investigate
         break
     
     print("Plotting current state...")

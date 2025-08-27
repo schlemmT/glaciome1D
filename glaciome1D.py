@@ -3,7 +3,7 @@ from scipy import sparse
 from scipy.sparse import diags
 from scipy.optimize import root, fsolve
 from scipy.interpolate import interp1d
-from scipy.integrate import simpson, cumtrapz, trapz
+from scipy.integrate import simpson
 
 from matplotlib import pyplot as plt
 import matplotlib
@@ -345,7 +345,7 @@ class glaciome:
         H = np.concatenate(([self.H0], self.H, [self.HL]))
         W = np.concatenate(([self.W0], self.W, [self.WL]))
         # V_old = simpson(H*W, X_)*1e-9
-        V_old = simpson(self.H[1:-1]*self.W[1:-1], self.X_[1:-1])*1e-9
+        V_old = simpson(self.H[1:-1]*self.W[1:-1], x=self.X_[1:-1])*1e-9
         #dVdt2_old = (self.U0*self.H0*self.W0 + self.B*simpson(W,X_) - self.U[-1]*self.param.d*self.WL)*1e-9
         
         print('Solving prognostic equations.')
@@ -363,7 +363,7 @@ class glaciome:
             X_ = np.concatenate(([self.X[0]], self.X_, [self.X[-1]]))
             H = np.concatenate(([self.H0], self.H, [self.HL]))
             W = np.concatenate(([self.W0], self.W, [self.WL]))
-            V = simpson(H*W, X_)*1e-9
+            V = simpson(H*W, x=X_)*1e-9
         
             dVdt = (V-V_old)/self.dt
               
@@ -803,7 +803,7 @@ class glaciome:
         
         u = np.linalg.solve(D,f)
         
-        u_mean = simpson(u,y,y[1])/y[-1]
+        u_mean = simpson(u, x=y)/y[-1]
         
         if dimensionless==True:
             u_mean = u_mean/self.param.Uscale
